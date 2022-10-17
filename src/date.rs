@@ -545,6 +545,59 @@ where
     }
 }
 
+#[cfg(feature = "arbitrary")]
+#[cfg_attr(docsrs, doc(cfg(feature = "arbitrary")))]
+mod arbitrary {
+    use super::{Date, NaiveDate, TimeZone};
+    use arbitrary::{Arbitrary, Unstructured};
+
+    // NOTE: Implementation of Arbitrary cannot be simply derived for Date<Tz>, due to
+    // the nontrivial bound <Tz as TimeZone>::Offset: Arbitrary.
+    #[cfg(feature = "arbitrary")]
+    impl<'a, Tz> Arbitrary<'a> for Date<Tz>
+    where
+        Tz: TimeZone,
+        <Tz as TimeZone>::Offset: Arbitrary<'a>,
+    {
+        fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Date<Tz>> {
+            let date = NaiveDate::arbitrary(u)?;
+            let offset = <Tz as TimeZone>::Offset::arbitrary(u)?;
+            Ok(Date { date, offset })
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use crate::offset::FixedOffset;
+
+        const UNSTRCUTURED_BINARY1: [u8; 8] = [0x8f, 0xc2, 0x95, 0xdc, 0x3e, 0x45, 0xb2, 0x3e];
+        const UNSTRCUTURED_BINARY2: [u8; 8] = [0x8b, 0xad, 0x2c, 0xc9, 0xf0, 0x05, 0x75, 0x84];
+
+        #[test]
+        fn test_different_unstructured() {
+            let mut unstrctured1 = Unstructured::new(&UNSTRCUTURED_BINARY1);
+            let date1: Date<FixedOffset> = Date::arbitrary(&mut unstrctured1).unwrap();
+
+            let mut unstrctured2 = Unstructured::new(&UNSTRCUTURED_BINARY2);
+            let date2: Date<FixedOffset> = Date::arbitrary(&mut unstrctured2).unwrap();
+
+            assert_ne!(date1, date2);
+        }
+
+        #[test]
+        fn test_same_unstructured() {
+            let mut unstrctured1 = Unstructured::new(&UNSTRCUTURED_BINARY1);
+            let date1: Date<FixedOffset> = Date::arbitrary(&mut unstrctured1).unwrap();
+
+            let mut unstrctured2 = Unstructured::new(&UNSTRCUTURED_BINARY1);
+            let date2: Date<FixedOffset> = Date::arbitrary(&mut unstrctured2).unwrap();
+
+            assert_eq!(date1, date2);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Date;
