@@ -37,6 +37,9 @@ use crate::{Date, Datelike, Months, TimeDelta, Timelike, Weekday};
 #[cfg(feature = "serde")]
 pub(super) mod serde;
 
+#[cfg(feature = "arbitrary")]
+mod arbitrary;
+
 #[cfg(test)]
 mod tests;
 

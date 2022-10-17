@@ -562,7 +562,7 @@ mod arbitrary {
         fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Date<Tz>> {
             let date = NaiveDate::arbitrary(u)?;
             let offset = <Tz as TimeZone>::Offset::arbitrary(u)?;
-            Ok(Date { date, offset })
+            Ok(Date::from_utc(date, offset))
         }
     }
 
