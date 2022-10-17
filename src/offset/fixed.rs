@@ -221,6 +221,53 @@ impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
     }
 }
 
+#[cfg(feature = "arbitrary")]
+#[cfg_attr(docsrs, doc(cfg(feature = "arbitrary")))]
+mod arbitrary {
+    use super::FixedOffset;
+    use arbitrary::{Arbitrary, Unstructured};
+
+    #[cfg(feature = "arbitrary")]
+    impl Arbitrary<'_> for FixedOffset {
+        fn arbitrary(u: &mut Unstructured) -> arbitrary::Result<FixedOffset> {
+            let secs = u.int_in_range(-86_399..=86_399)?;
+            let fixed_offset = FixedOffset::east_opt(secs)
+                .expect("Could not generate a valid chrono::FixedOffset. It looks like implementation of Arbitrary for FixedOffset is erroneous.");
+            Ok(fixed_offset)
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        const UNSTRCUTURED_BINARY1: [u8; 8] = [0x8f, 0xc2, 0x95, 0xdc, 0x3e, 0x45, 0xb2, 0x3e];
+        const UNSTRCUTURED_BINARY2: [u8; 8] = [0x8b, 0xad, 0x2c, 0xc9, 0xf0, 0x05, 0x75, 0x84];
+
+        #[test]
+        fn test_different_unstructured() {
+            let mut unstrctured1 = Unstructured::new(&UNSTRCUTURED_BINARY1);
+            let offset1 = FixedOffset::arbitrary(&mut unstrctured1).unwrap();
+
+            let mut unstrctured2 = Unstructured::new(&UNSTRCUTURED_BINARY2);
+            let offset2 = FixedOffset::arbitrary(&mut unstrctured2).unwrap();
+
+            assert_ne!(offset1, offset2);
+        }
+
+        #[test]
+        fn test_same_unstructured() {
+            let mut unstrctured1 = Unstructured::new(&UNSTRCUTURED_BINARY1);
+            let offset1 = FixedOffset::arbitrary(&mut unstrctured1).unwrap();
+
+            let mut unstrctured2 = Unstructured::new(&UNSTRCUTURED_BINARY1);
+            let offset2 = FixedOffset::arbitrary(&mut unstrctured2).unwrap();
+
+            assert_eq!(offset1, offset2);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::FixedOffset;
